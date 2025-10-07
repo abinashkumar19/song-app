@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  backend:
+    build: ./backend
+    container_name: song-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=mysql+pymysql://admin:Cloud1234@database-1.ca7gw2awazb9.us-east-1.rds.amazonaws.com:3306/songsdb
+
+  frontend:
+    build: ./frontend
+    container_name: song-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
