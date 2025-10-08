@@ -10,33 +10,30 @@ from song_model import Base, Song
 app = Flask(__name__)
 CORS(app)
 
-# Database connection
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    DATABASE_URL = "sqlite:///songs.db"
+DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///songs.db')
 
 for i in range(10):
     try:
         engine = create_engine(DATABASE_URL, echo=False, future=True)
         conn = engine.connect()
         conn.close()
-        print("✅ Database connected!")
+        print("✅ Connected to database successfully!")
         break
     except OperationalError as e:
-        print(f"❌ Connection failed (attempt {i+1}/10): {e}")
+        print(f"❌ Database connection failed (attempt {i+1}/10): {e}")
         time.sleep(5)
 else:
-    raise Exception("Database connection failed after 10 attempts")
+    raise Exception("Could not connect to database after multiple attempts")
 
 Base.metadata.create_all(engine)
 SessionLocal = sessionmaker(bind=engine)
 
 @app.route('/')
-def home():
-    return jsonify({"message": "Flask backend running successfully!"})
+def health():
+    return jsonify({"status": "ok", "message": "Backend running"}), 200
 
 @app.route('/api/songs', methods=['GET'])
-def get_songs():
+def list_songs():
     session = SessionLocal()
     songs = session.query(Song).all()
     session.close()
@@ -48,8 +45,10 @@ def add_song():
     title = data.get('title')
     artist = data.get('artist')
     url = data.get('url')
+
     if not title:
         return jsonify({'error': 'Title is required'}), 400
+
     session = SessionLocal()
     new_song = Song(title=title, artist=artist, url=url)
     session.add(new_song)
@@ -58,5 +57,5 @@ def add_song():
     session.close()
     return jsonify(result), 201
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
