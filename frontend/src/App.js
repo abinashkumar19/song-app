@@ -1,48 +1,33 @@
-import React, { useEffect, useState } from "react";
-
-const backendUrl = "http://localhost:5000"; // Replace with backend public IP if deployed
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 function App() {
   const [songs, setSongs] = useState([]);
-  const [title, setTitle] = useState("");
-  const [artist, setArtist] = useState("");
-  const [url, setUrl] = useState("");
-
-  const fetchSongs = async () => {
-    const res = await fetch(`${backendUrl}/api/songs`);
-    const data = await res.json();
-    setSongs(data);
-  };
-
-  const addSong = async () => {
-    await fetch(`${backendUrl}/api/songs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, artist, url }),
-    });
-    setTitle("");
-    setArtist("");
-    setUrl("");
-    fetchSongs();
-  };
+  const [title, setTitle] = useState('');
+  const [artist, setArtist] = useState('');
+  const [url, setUrl] = useState('');
 
   useEffect(() => {
-    fetchSongs();
+    axios.get('http://backend:5000/api/songs')
+      .then(res => setSongs(res.data))
+      .catch(err => console.error(err));
   }, []);
 
+  const addSong = () => {
+    axios.post('http://backend:5000/api/songs', { title, artist, url })
+      .then(res => setSongs([...songs, res.data]))
+      .catch(err => console.error(err));
+  }
+
   return (
-    <div style={{ padding: 20, fontFamily: "Arial" }}>
-      <h1>🎶 Song App</h1>
-      <div>
-        <input placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
-        <input placeholder="Artist" value={artist} onChange={e => setArtist(e.target.value)} />
-        <input placeholder="URL" value={url} onChange={e => setUrl(e.target.value)} />
-        <button onClick={addSong}>Add Song</button>
-      </div>
+    <div>
+      <h1>Song App</h1>
+      <input placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
+      <input placeholder="Artist" value={artist} onChange={e => setArtist(e.target.value)} />
+      <input placeholder="URL" value={url} onChange={e => setUrl(e.target.value)} />
+      <button onClick={addSong}>Add Song</button>
       <ul>
-        {songs.map((s) => (
-          <li key={s.id}>{s.title} — {s.artist}</li>
-        ))}
+        {songs.map(s => <li key={s.id}>{s.title} - {s.artist}</li>)}
       </ul>
     </div>
   );
