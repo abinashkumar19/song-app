@@ -78,16 +78,7 @@ resource "aws_security_group" "main_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    description = "Allow SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
-    description = "Allow all outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -108,12 +99,13 @@ resource "aws_instance" "songapp_instance" {
   user_data = <<-EOF
               #!/bin/bash
               yum update -y
-              yum install -y docker git
+              yum install -y docker git python3-pip
               systemctl start docker
               systemctl enable docker
               cd /home/ec2-user
               git clone https://github.com/abinashcloud/song-app.git
               cd song-app
+              echo "DATABASE_URL=mysql+pymysql://${aws_db_instance.song_rds.username}:${aws_db_instance.song_rds.password}@${aws_db_instance.song_rds.endpoint}:3306/${aws_db_instance.song_rds.db_name}" > .env
               docker-compose up --build -d
               EOF
 
@@ -132,7 +124,7 @@ resource "aws_db_instance" "song_rds" {
   identifier              = "songapp-db"
   allocated_storage       = 20
   engine                  = "mysql"
-  engine_version          = "8.0.39"  # ✅ Valid version
+  engine_version          = "8.0.39"
   instance_class          = "db.t3.micro"
   db_name                 = "songdb"
   username                = "admin"
@@ -141,6 +133,14 @@ resource "aws_db_instance" "song_rds" {
   skip_final_snapshot     = true
   vpc_security_group_ids  = [aws_security_group.main_sg.id]
   db_subnet_group_name    = aws_db_subnet_group.song_subnet_group.name
-
   tags = { Name = "songapp-db" }
+}
+
+# ---------------- Outputs ----------------
+output "ec2_public_ip" {
+  value = aws_instance.songapp_instance.public_ip
+}
+
+output "rds_endpoint" {
+  value = aws_db_instance.song_rds.endpoint
 }
